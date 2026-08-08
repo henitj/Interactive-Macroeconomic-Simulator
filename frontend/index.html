@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Hackonomics 2027 — Macroeconomic Simulator</title>
+  <meta name="description" content="An institutional-grade interactive macroeconomic simulator. Manipulate interest rates, money supply, taxes and supply chains to see real-time effects on markets, wages and purchasing power." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/styles.css" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📈</text></svg>" />
+</head>
+<body>
+  <!-- ============================ HEADER ============================ -->
+  <header class="topbar">
+    <div class="topbar__brand">
+      <div class="topbar__logo">
+        <svg viewBox="0 0 32 32" width="28" height="28" fill="none" aria-hidden="true">
+          <path d="M3 24 L11 16 L17 20 L29 6" stroke="url(#g)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+          <circle cx="29" cy="6" r="2.5" fill="#34d399"/>
+          <defs><linearGradient id="g" x1="0" y1="0" x2="32" y2="32"><stop stop-color="#60a5fa"/><stop offset="1" stop-color="#34d399"/></linearGradient></defs>
+        </svg>
+      </div>
+      <div class="topbar__title">
+        <h1>Hackonomics <span class="accent">2027</span></h1>
+        <span class="topbar__sub">Interactive Macroeconomic Simulator</span>
+      </div>
+    </div>
+
+    <nav class="topbar__tabs" role="tablist">
+      <button class="tab is-active" data-view="dashboard" role="tab">Dashboard</button>
+      <button class="tab" data-view="scenarios" role="tab">Scenarios</button>
+      <button class="tab" data-view="household" role="tab">Household</button>
+      <button class="tab" data-view="game" role="tab">Central Banker</button>
+    </nav>
+
+    <div class="topbar__actions">
+      <button id="btn-run" class="btn btn--primary">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+        Run Simulation
+      </button>
+      <button id="btn-reroll" class="btn btn--ghost" title="Generate a new stochastic seed">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 4v5h-5"/></svg>
+        New Seed
+      </button>
+    </div>
+  </header>
+
+  <!-- ============================ TICKER ============================ -->
+  <div class="ticker" aria-live="polite">
+    <div class="ticker__label">
+      <span class="ticker__dot"></span> LIVE
+    </div>
+    <div class="ticker__viewport">
+      <div id="ticker-track" class="ticker__track"></div>
+    </div>
+    <div class="ticker__meta">
+      <span id="ticker-month">Month 0</span>
+      <span class="ticker__sep">•</span>
+      <span id="ticker-seed">seed —</span>
+    </div>
+  </div>
+
+  <main class="layout">
+    <!-- ======================== LEFT: LEVERS ======================== -->
+    <aside class="panel panel--levers" id="levers-panel">
+      <div class="panel__head">
+        <h2>Policy Levers</h2>
+        <button id="btn-reset" class="link-btn" title="Reset to baseline">Reset</button>
+      </div>
+
+      <div class="lever" data-lever="interest_rate">
+        <div class="lever__head">
+          <label class="lever__label" data-tooltip="interest_rate">Federal Funds Rate</label>
+          <span class="lever__value" id="val-interest_rate">4.50%</span>
+        </div>
+        <input type="range" id="rng-interest_rate" min="-1" max="20" step="0.05" value="4.5" class="slider" />
+        <div class="lever__scale"><span>-1%</span><span>20%</span></div>
+      </div>
+
+      <div class="lever" data-lever="inflation_target">
+        <div class="lever__head">
+          <label class="lever__label" data-tooltip="inflation_target">Inflation Target</label>
+          <span class="lever__value" id="val-inflation_target">2.00%</span>
+        </div>
+        <input type="range" id="rng-inflation_target" min="0" max="8" step="0.1" value="2" class="slider" />
+        <div class="lever__scale"><span>0%</span><span>8%</span></div>
+      </div>
+
+      <div class="lever" data-lever="money_supply_growth">
+        <div class="lever__head">
+          <label class="lever__label" data-tooltip="money_supply_growth">Money Supply (M2) Growth</label>
+          <span class="lever__value" id="val-money_supply_growth">5.00%</span>
+        </div>
+        <input type="range" id="rng-money_supply_growth" min="-10" max="30" step="0.1" value="5" class="slider" />
+        <div class="lever__scale"><span>-10%</span><span>30%</span></div>
+      </div>
+
+      <div class="lever" data-lever="tax_rate">
+        <div class="lever__head">
+          <label class="lever__label" data-tooltip="tax_rate">Avg. Tax Rate</label>
+          <span class="lever__value" id="val-tax_rate">22.00%</span>
+        </div>
+        <input type="range" id="rng-tax_rate" min="0" max="55" step="0.5" value="22" class="slider" />
+        <div class="lever__scale"><span>0%</span><span>55%</span></div>
+      </div>
+
+      <div class="lever" data-lever="government_spending">
+        <div class="lever__head">
+          <label class="lever__label" data-tooltip="government_spending">Gov't Spending</label>
+          <span class="lever__value" id="val-government_spending">20.00%</span>
+        </div>
+        <input type="range" id="rng-government_spending" min="8" max="45" step="0.5" value="20" class="slider" />
+        <div class="lever__scale"><span>8%</span><span>45%</span></div>
+      </div>
+
+      <div class="lever" data-lever="supply_chain_friction">
+        <div class="lever__head">
+          <label class="lever__label" data-tooltip="supply_chain_friction">Supply-Chain Friction</label>
+          <span class="lever__value" id="val-supply_chain_friction">10%</span>
+        </div>
+        <input type="range" id="rng-supply_chain_friction" min="0" max="100" step="1" value="10" class="slider" />
+        <div class="lever__scale"><span>Smooth</span><span>Severe</span></div>
+      </div>
+
+      <div class="lever" data-lever="sentiment">
+        <div class="lever__head">
+          <label class="lever__label" data-tooltip="sentiment">Market Sentiment</label>
+          <span class="lever__value" id="val-sentiment">55 / 100</span>
+        </div>
+        <input type="range" id="rng-sentiment" min="2" max="98" step="1" value="55" class="slider" />
+        <div class="lever__scale sentiment-scale">
+          <span class="neg">Fear</span><span class="pos">Greed</span>
+        </div>
+      </div>
+
+      <div class="lever" data-lever="horizon">
+        <div class="lever__head">
+          <label class="lever__label">Simulation Horizon</label>
+          <span class="lever__value" id="val-horizon">5 years</span>
+        </div>
+        <input type="range" id="rng-horizon" min="1" max="20" step="1" value="5" class="slider" />
+        <div class="lever__scale"><span>1 yr</span><span>20 yr</span></div>
+      </div>
+
+      <div class="lever" data-lever="volatility">
+        <div class="lever__head">
+          <label class="lever__label">Shock Volatility</label>
+          <span class="lever__value" id="val-volatility">1.0×</span>
+        </div>
+        <input type="range" id="rng-volatility" min="0" max="30" step="1" value="10" class="slider" />
+        <div class="lever__scale"><span>Calm</span><span>Crisis</span></div>
+      </div>
+    </aside>
+
+    <!-- ======================== CENTER: CHARTS ====================== -->
+    <section class="panel panel--charts">
+      <div class="panel__head panel__head--charts">
+        <div class="chart-tabs">
+          <button class="chart-tab is-active" data-chart-group="markets">Markets</button>
+          <button class="chart-tab" data-chart-group="macro">Macro</button>
+          <button class="chart-tab" data-chart-group="households">Households</button>
+          <button class="chart-tab" data-chart-group="all">All 2×2</button>
+        </div>
+        <div class="chart-legend" id="chart-legend"></div>
+      </div>
+
+      <div class="chart-grid" id="chart-grid">
+        <div class="chart-card" data-chart="sp500">
+          <div class="chart-card__head">
+            <h3 data-tooltip="sp500">Stock Market</h3>
+            <span class="chart-card__val" id="val-sp500">—</span>
+          </div>
+          <canvas id="chart-sp500"></canvas>
+        </div>
+        <div class="chart-card" data-chart="bondYield">
+          <div class="chart-card__head">
+            <h3 data-tooltip="bond_yield">Bond Yield</h3>
+            <span class="chart-card__val" id="val-bondYield">—</span>
+          </div>
+          <canvas id="chart-bondYield"></canvas>
+        </div>
+        <div class="chart-card" data-chart="housePrice">
+          <div class="chart-card__head">
+            <h3 data-tooltip="house_price">Real Estate</h3>
+            <span class="chart-card__val" id="val-housePrice">—</span>
+          </div>
+          <canvas id="chart-housePrice"></canvas>
+        </div>
+        <div class="chart-card" data-chart="commodity">
+          <div class="chart-card__head">
+            <h3 data-tooltip="commodity">Commodities</h3>
+            <span class="chart-card__val" id="val-commodity">—</span>
+          </div>
+          <canvas id="chart-commodity"></canvas>
+        </div>
+
+        <!-- hidden until macro tab -->
+        <div class="chart-card" data-chart="gdp" hidden>
+          <div class="chart-card__head">
+            <h3 data-tooltip="gdp">Real GDP</h3>
+            <span class="chart-card__val" id="val-gdp">—</span>
+          </div>
+          <canvas id="chart-gdp"></canvas>
+        </div>
+        <div class="chart-card" data-chart="inflation" hidden>
+          <div class="chart-card__head">
+            <h3 data-tooltip="inflation">Inflation (CPI)</h3>
+            <span class="chart-card__val" id="val-inflation">—</span>
+          </div>
+          <canvas id="chart-inflation"></canvas>
+        </div>
+        <div class="chart-card" data-chart="unemployment" hidden>
+          <div class="chart-card__head">
+            <h3 data-tooltip="unemployment">Unemployment</h3>
+            <span class="chart-card__val" id="val-unemployment">—</span>
+          </div>
+          <canvas id="chart-unemployment"></canvas>
+        </div>
+        <div class="chart-card" data-chart="moneySupply" hidden>
+          <div class="chart-card__head">
+            <h3 data-tooltip="money_supply_growth">Money Supply</h3>
+            <span class="chart-card__val" id="val-moneySupply">—</span>
+          </div>
+          <canvas id="chart-moneySupply"></canvas>
+        </div>
+
+        <!-- household charts -->
+        <div class="chart-card" data-chart="realWage" hidden>
+          <div class="chart-card__head">
+            <h3 data-tooltip="real_wage">Real vs Nominal Wage</h3>
+            <span class="chart-card__val" id="val-realWage">—</span>
+          </div>
+          <canvas id="chart-realWage"></canvas>
+        </div>
+        <div class="chart-card" data-chart="purchasingPower" hidden>
+          <div class="chart-card__head">
+            <h3 data-tooltip="purchasing_power">Purchasing Power</h3>
+            <span class="chart-card__val" id="val-purchasingPower">—</span>
+          </div>
+          <canvas id="chart-purchasingPower"></canvas>
+        </div>
+      </div>
+
+      <!-- Summary KPIs -->
+      <div class="kpi-row" id="kpi-row"></div>
+    </section>
+
+    <!-- ===================== RIGHT: INSIGHTS ======================= -->
+    <aside class="panel panel--insights" id="insights-panel">
+      <div class="panel__head">
+        <h2>Edu-Engine</h2>
+        <span class="badge" id="insight-count">0 insights</span>
+      </div>
+      <div id="insights-list" class="insights-list">
+        <div class="empty-state">
+          <p>Adjust a lever and run the simulation to see plain-English explanations of cause and effect.</p>
+        </div>
+      </div>
+    </aside>
+  </main>
+
+  <!-- ======================== SCENARIOS VIEW ======================= -->
+  <section class="view view--scenarios" id="view-scenarios" hidden>
+    <div class="view__head">
+      <h2>What-If Historical Scenarios</h2>
+      <p>One-click presets for landmark economic moments. Each loads lever settings; press Run to see how the economy evolves.</p>
+    </div>
+    <div class="scenario-grid" id="scenario-grid"></div>
+  </section>
+
+  <!-- ======================== HOUSEHOLD VIEW ======================= -->
+  <section class="view view--household" id="view-household" hidden>
+    <div class="view__head">
+      <h2>Household Impact Calculator</h2>
+      <p>Enter your personal salary and debt profile to see how macro trends hit your wallet.</p>
+    </div>
+    <div class="household-layout">
+      <form class="panel household-form" id="household-form">
+        <h3>Your Profile</h3>
+        <div class="form-row">
+          <label>Gross Annual Salary ($)</label>
+          <input type="number" id="hh-salary" value="75000" min="0" step="1000" />
+        </div>
+        <div class="form-row">
+          <label>Mortgage Debt ($)</label>
+          <input type="number" id="hh-mortgage" value="250000" min="0" step="5000" />
+        </div>
+        <div class="form-row">
+          <label>Mortgage Rate (%)</label>
+          <input type="number" id="hh-mortgage-rate" value="6.5" min="0" max="25" step="0.05" />
+        </div>
+        <div class="form-row">
+          <label>Other Debt ($)</label>
+          <input type="number" id="hh-other" value="15000" min="0" step="500" />
+        </div>
+        <div class="form-row">
+          <label>Other Debt Rate (%)</label>
+          <input type="number" id="hh-other-rate" value="18" min="0" max="40" step="0.1" />
+        </div>
+        <div class="form-row">
+          <label>Savings ($)</label>
+          <input type="number" id="hh-savings" value="20000" min="0" step="500" />
+        </div>
+        <div class="form-row">
+          <label>Baseline Monthly Spend ($)</label>
+          <input type="number" id="hh-spend" value="3500" min="0" step="50" />
+        </div>
+        <button type="submit" class="btn btn--primary btn--block">Calculate My Impact</button>
+      </form>
+
+      <div class="panel household-results">
+        <div class="household-kpis" id="household-kpis"></div>
+        <div class="chart-card chart-card--full">
+          <div class="chart-card__head"><h3>Monthly Real Income vs Expenses</h3></div>
+          <canvas id="chart-household"></canvas>
+        </div>
+        <div class="chart-card chart-card--full">
+          <div class="chart-card__head"><h3>Mortgage Payment Over Time</h3></div>
+          <canvas id="chart-mortgage"></canvas>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========================= GAME VIEW ========================== -->
+  <section class="view view--game" id="view-game" hidden>
+    <div class="view__head">
+      <h2>Central Banker Challenge</h2>
+      <p>Keep inflation near 2% and unemployment below 6% over 5 years. Set policy each year — your score depends on stability, not heroics.</p>
+    </div>
+
+    <div class="game-layout">
+      <div class="panel game-panel">
+        <div class="game-status" id="game-status">
+          <div class="game-year">Year <span id="game-year">0</span> / 5</div>
+          <div class="game-stats">
+            <div class="game-stat">
+              <span class="game-stat__label">Inflation</span>
+              <span class="game-stat__val" id="game-inflation">2.0%</span>
+            </div>
+            <div class="game-stat">
+              <span class="game-stat__label">Unemployment</span>
+              <span class="game-stat__val" id="game-unemployment">4.5%</span>
+            </div>
+            <div class="game-stat">
+              <span class="game-stat__label">GDP Growth</span>
+              <span class="game-stat__val" id="game-gdp">2.0%</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="game-controls" id="game-controls">
+          <div class="lever" data-lever="game_rate">
+            <div class="lever__head">
+              <label class="lever__label">Set Policy Rate</label>
+              <span class="lever__value" id="val-game_rate">4.50%</span>
+            </div>
+            <input type="range" id="rng-game_rate" min="0" max="20" step="0.1" value="4.5" class="slider" />
+          </div>
+          <div class="lever" data-lever="game_m2">
+            <div class="lever__head">
+              <label class="lever__label">Money Supply Growth</label>
+              <span class="lever__value" id="val-game_m2">5.0%</span>
+            </div>
+            <input type="range" id="rng-game_m2" min="-5" max="20" step="0.5" value="5" class="slider" />
+          </div>
+          <button id="btn-game-advance" class="btn btn--primary btn--block">Advance 1 Year</button>
+          <button id="btn-game-restart" class="btn btn--ghost btn--block">Restart Challenge</button>
+        </div>
+      </div>
+
+      <div class="panel game-panel">
+        <div class="chart-card chart-card--full">
+          <div class="chart-card__head"><h3>Your Tenure</h3></div>
+          <canvas id="chart-game"></canvas>
+        </div>
+        <div id="game-result" class="game-result" hidden></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== TOOLTIP / MODALS ====================== -->
+  <div id="tooltip" class="tooltip" role="tooltip" hidden></div>
+
+  <footer class="footer">
+    <span>Hackonomics 2027 · Built for the Interactive Macroeconomic Simulator challenge</span>
+    <span class="footer__sep">·</span>
+    <span>Python economic engine · Vanilla JS frontend · Chart.js visualisations</span>
+  </footer>
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+  <script src="js/chart-theme.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/simulation.js"></script>
+  <script src="js/charts.js"></script>
+  <script src="js/household.js"></script>
+  <script src="js/game.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
