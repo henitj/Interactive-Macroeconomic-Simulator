@@ -1,319 +1,165 @@
-# 📈 Hackonomics 2027 — Interactive Macroeconomic Simulator
+# Econ Sim — Interactive Macroeconomic Simulator
 
-An institutional-grade, web-based interactive macroeconomic simulator. Manipulate core economic levers — interest rates, money supply, taxes, supply chains, sentiment — and watch real-time dynamics unfold across stock markets, bond yields, real estate, commodities, wages, GDP, and consumer purchasing power.
-
-Built for the **Hackonomics 2027** challenge to bridge complex economic theory with intuitive, real-time visual feedback for high school and college students.
-
-![Tech](https://img.shields.io/badge/Python-3.11-blue)
-![Flask](https://img.shields.io/badge/Flask-3.0-green)
-![JS](https://img.shields.io/badge/Vanilla-JS-yellow)
-![Chart.js](https://img.shields.io/badge/Chart.js-4.4-orange)
+> **Vision**: A production-grade, institutional-dark-mode dashboard that bridges complex macroeconomic theory with intuitive visual feedback. Designed for high school and college economics students, institutional analysts, and policy enthusiasts.
 
 ---
 
-## ✨ Features
-
-### 🎛️ Six Policy Levers
-- **Federal Funds Rate** — the central bank's primary tool
-- **Inflation Target** — anchors long-run expectations
-- **Money Supply Growth (M2)** — quantity-theory channel
-- **Average Tax Rate** — fiscal stance / disposable income
-- **Government Spending** — G in Y = C + I + G + NX
-- **Supply-Chain Friction** — cost-push / stagflation driver
-- **Market Sentiment** — animal spirits & risk premium
-
-Plus adjustable **simulation horizon** (1–20 years) and **shock volatility** (calm → crisis).
-
-### 📊 Real-Time Outputs (2×2 Multi-Chart Grid)
-- Stock Market (S&P 500 proxy) — earnings × P/E discount model
-- 10-Year Bond Yields — policy rate + term + inflation premium
-- Real Estate Index — income / mortgage-carry affordability model
-- Commodity Index — inflation hedge × demand × supply shocks
-- Real GDP & GDP growth (IS-curve / Okun's law)
-- CPI Inflation (Phillips curve + money + cost-push)
-- Unemployment (Okun's law)
-- Money Supply (M2)
-- Real vs. Nominal Wages
-- Consumer Purchasing Power (real disposable income net of debt service)
-
-### 🎲 Unique Run Every Time
-A stochastic micro-shock engine draws Gaussian + tail events across 10 shock categories (supply, demand, financial, fiscal, energy, geopolitical, labor, monetary, tech, housing). Identical slider settings produce distinct, realistic trajectories. Pass an explicit seed for reproducibility.
-
-### 🕰️ "What-If" Historical Scenarios
-One-click presets for landmark economic moments:
-- 1970s Stagflation (oil shocks + loose money)
-- 2008 Financial Crisis (credit freeze + housing bust)
-- 2020 Supply-Chain Shock (pandemic lockdowns + stimulus)
-- Volcker Disinflation (1981 brutal rate hikes)
-- Great Depression (1929 deflation + money collapse)
-- Goldilocks 1990s (productivity boom)
-
-### 🎓 Edu-Engine (Educational Insight Layer)
-- Dynamic, plain-English explanations that trigger as parameters change
-- Cause-and-effect chains (e.g., how rate hikes hit housing affordability)
-- Tooltips on every chart & lever with formulas and economic theory
-- Lever-change explanations that list transmission channels
-
-### 👨‍👩‍👧 Household Impact Calculator
-Input salary, mortgage, other debt, savings, and monthly spend to see how macro trends hit personal purchasing power, mortgage payments, and discretionary income over the simulation horizon.
-
-### 🏛️ "Central Banker" Game Mode
-A gamified 5-year challenge: set the policy rate and money supply growth each year to keep inflation near 2% and unemployment below 6%. Scored on a 0–100 scale with letter grades (S/A/B/C/D/F) and titles like "Maestro of the Mandate" or "Stagflation Architect."
-
-### 📰 Live Event Ticker
-A scrolling financial news feed reports simulated economic events and micro-shocks as time progresses.
-
----
-
-## 🏗️ Architecture
+## Repository Structure
 
 ```
-Interactive-Macroeconomic-Simulator/
+.
+├── index.html              # Root landing page (Vercel / GitHub Pages entry)
+├── README.md                # This file
 ├── backend/
-│   ├── app/
-│   │   ├── app.py           # Flask API — routing, validation, serialization
-│   │   ├── models.py        # Economic engine — all math & stochastic logic
-│   │   └── insights.py      # Edu-Engine — plain-English explanations & tooltips
-│   └── requirements.txt
-├── frontend/
-│   ├── index.html           # Dashboard layout
-│   ├── css/
-│   │   └── styles.css       # Institutional dark-mode design system
-│   └── js/
-│       ├── app.js           # Initialization, tabs, tooltips, scenarios
-│       ├── api.js           # Fetch client for backend endpoints
-│       ├── simulation.js    # Lever state, run orchestration
-│       ├── charts.js        # Chart.js rendering & KPI updates
-│       ├── chart-theme.js   # Global chart theme & gradient helpers
-│       ├── household.js     # Household impact calculator
-│       └── game.js          # Central Banker game mode
-└── README.md
+│   ├── app.py               # Flask API + stochastic economic engine
+│   ├── engine.py            # (optional split) Core simulation logic
+│   └── requirements.txt     # Python dependencies
+└── frontend/
+    ├── index.html           # Full application page
+    ├── css/
+    │   └── style.css         # Institutional dark-mode styles
+    ├── js/
+    │   └── app.js            # Vanilla JS controller
+    └── lib/
+        └── chart.min.js      # Chart.js (offline-capable)
 ```
-
-**Clean separation**: the Python backend owns all mathematical modeling; the vanilla JS frontend owns layout, state, and interactive charting. The two communicate over a JSON API.
 
 ---
 
-## 🧮 Economic Models
+## Deployment (Vercel / Static Host)
 
-The engine advances the economy one month at a time over 60–240 months. Key equations:
+### Option A: Pure Frontend (Static)
+1. Push this repo to GitHub.
+2. Connect to Vercel.
+3. Set the root directory to `.` (default) — `index.html` will serve as the entry point.
+4. **Note**: The simulation requires the Python backend (`/api/simulate`). For a fully static experience without a server, replace the `fetch()` calls in `frontend/js/app.js` with a mock data generator. See the "Mock Mode" section below.
 
-### IS-Curve (Output Gap)
+### Option B: Full Stack (Vercel Serverless + Static)
+1. Configure Vercel `vercel.json` to proxy `/api/*` to the Flask backend via `vercel-python` or a separate serverless function.
+2. Example `vercel.json`:
+```json
+{
+  "version": 2,
+  "builds": [
+    { "src": "backend/app.py", "use": "@vercel/python" }
+  ],
+  "routes": [
+    { "src": "/api/(.*)", "dest": "backend/app.py" },
+    { "src": "/(.*)", "dest": "/index.html" }
+  ]
+}
 ```
-output_gap = -β·(r - r*) + fiscal_impulse - tax_drag - supply_drag
-            + γ·sentiment_gap + δ·shock
-```
+3. Deploy. The root `index.html` loads assets from `frontend/`, and `/api` hits the Python engine.
 
-### GDP Growth
-```
-ΔGDP = potential_growth + α·output_gap + ε_shock
-```
-
-### Okun's Law (Unemployment)
-```
-u_target = u* - κ·output_gap + shock
-```
-
-### Phillips Curve (Inflation)
-```
-π = w1·π^e + w2·π* + w3·(u* - u) + cost_push
-   + money_lag + supply_shock
-```
-With adaptive expectations anchored to the target:
-```
-π^e_t = λ·π^e_{t-1} + (1-λ)·π_actual
-```
-
-### Stock Market (DCF Proxy)
-```
-P = E × [1 / (r_f + ERP + π_drag)] × sentiment_premium
-```
-
-### Bond Yield
-```
-y = i_policy + term_premium + 0.6·π^e + output_gap_premium
-```
-
-### Real Estate
-```
-P_house ∝ income^0.6 × (1/mortgage_carry)^0.55
-         × supply_constraint × sentiment
-```
-
-### Wages
-```
-ΔW_nominal = a·π^e + b·π + c·(u* - u)
-W_real = W_nominal / CPI
-```
-
-### Purchasing Power
-```
-PP = 100 × (W_real / W_real₀) × [(1-τ)/(1-τ₀)] × [(1-debt)/(1-debt₀)]
-```
-
-All coefficients are calibrated so a baseline run produces ~2% inflation, ~4.5% unemployment, ~2% real GDP growth, and positive but moderate equity returns over 5 years.
-
----
-
-## 🚀 Getting Started
-
-### Prerequisites
-- Python 3.10+
-- A modern web browser
-
-### Installation
-
+### Option C: Local Development
 ```bash
-# Clone the repository
-git clone https://github.com/yourusername/Interactive-Macroeconomic-Simulator.git
-cd Interactive-Macroeconomic-Simulator
-
-# Create a virtual environment
-python3 -m venv .venv
-source .venv/bin/activate   # Linux/macOS
-# .venv\Scripts\activate    # Windows
-
-# Install dependencies
-pip install -r backend/requirements.txt
-```
-
-### Run the Server
-
-```bash
-cd backend/app
+# Start backend
+cd backend
+pip install -r requirements.txt
 python app.py
+
+# Open frontend/index.html in a browser
+# If using the backend, set API_BASE to 'http://localhost:5000/api' in frontend/js/app.js
 ```
 
-The application will be available at **http://localhost:8000** — the Flask server serves both the API and the frontend from a single port.
+---
 
-### Production Deployment
+## Economic Theory & Mathematical Models
 
-```bash
-gunicorn -w 4 -b 0.0.0.0:8000 app:app
-```
-Run from the `backend/app/` directory.
+### 1. Dynamic Economic Engine
+The engine is a **stochastic, mean-reverting discrete-time macro model** (20 quarters / 5 years) built in Python with NumPy. It is non-deterministic: identical slider settings produce unique trajectories due to Brownian-motion micro-shocks and random shocks.
+
+### 2. Core Equations
+
+| Variable | Model / Approximation | Key Drivers |
+|---|---|---|
+| **Real Rate** | Fisher approximation: `r = i - π` | Fed rate (`i`) and Inflation (`π`) |
+| **GDP Growth** | `ΔGDP = base + sentiment_boost + fiscal_drag - rate_drag - friction_drag + money_boost + noise` | Policy, supply friction, sentiment, monetary growth |
+| **Unemployment** | Okun's Law approximation: `ΔU ≈ -0.6 · (ΔGDP - 2.5%)` | GDP trajectory |
+| **Inflation (CPI)** | Phillips Curve + Monetary + Supply: `Δπ = (5 - U)·0.15 + M·0.25 + F·0.8 - (i - 3)·0.2` | Unemployment (`U`), Money (`M`), Friction (`F`), Fed rate (`i`) |
+| **Stock Index** | `ΔS = (3 - i)·15 + (M - 2)·40 + sentiment·3 + shock·400 + noise` | Real rates, liquidity, sentiment, shocks |
+| **Bond Yields** | `y = i + 0.3π + risk_spread` | Fed rate, inflation, default/spread premium |
+| **Real Estate** | `ΔRE = (M - 2)·8 - (i - 3)·18 - max(0, U - 5)·6 + noise` | Monetary conditions, unemployment |
+| **Commodity Index** | `ΔC = F/40·3 + sentiment/50·2 + noise` | Supply friction, sentiment |
+| **Nominal Wages** | `ΔW_nom = ΔGDP·0.35 + π·0.45 + noise` | Output growth, price pass-through |
+| **Real Wages** | `W_real = W_nom / (1 + π/100) · 0.95` | Nominal wages deflated by CPI |
+| **Consumer Power** | `P = (W_real / Cost_index) · 100` | Real wages relative to CPI + commodity mix |
+
+### 3. Probabilistic Shocks
+Every quarter has an 8% chance of a micro-shock:
+- Rate shock, Inflation spike, Supply chain break, Sentiment crash, Commodity spike, Fiscal stimulus, Credit crunch, Productivity boom.
+Shocks propagate through all variables, creating realistic macro volatility.
+
+### 4. Historical Scenarios
+The engine includes parameter presets that map to landmark economic moments:
+- **1970s Stagflation**: High rates (`12%`), high inflation (`9.5%`), severe supply friction (`85`), depressed sentiment (`25`).
+- **2008 Financial Crisis**: Near-zero rates (`0.25%`), deflation risk (`0.5%`), credit freeze (`sentiment 15`, `supply friction 45`).
+- **2020 Supply Shock**: Zero-rate policy (`0.1%`), massive monetary growth (`22%`), extreme supply friction (`92`), depressed sentiment (`30`).
 
 ---
 
-## 🔌 API Reference
+## Feature Set
 
-### `GET /api/health`
-Liveness probe.
+### A. Interactive "What-If" Historical Scenarios
+One-click preset buttons load historical macro conditions into the sliders and instantly regenerate a simulation trajectory.
 
-### `GET /api/scenarios`
-Returns all historical what-if scenario presets.
+### B. The "Edu-Engine" (Educational Insight Layer)
+- Dynamic plain-English explanations triggered by parameter changes.
+- Explicit cause-and-effect chains (e.g., "Rate hikes impact housing affordability via real estate drag and debt service costs").
+- Every chart includes a tooltip breaking down the underlying formula.
 
-### `GET /api/tooltips`
-Returns the educational glossary for all charts and levers.
+### C. Household Impact Calculator
+- Users input a personal salary and debt profile.
+- The calculator applies the simulated `consumer_power_index` and `real_estate_index` to estimate adjusted purchasing power, housing cost index, and monthly debt service proxies.
+- Demonstrates how macro dynamics (inflation, real estate, wages) directly affect household budgets.
 
-### `POST /api/simulate`
-Run a stochastic simulation.
-
-**Request body:**
-```json
-{
-  "interest_rate": 0.045,
-  "inflation_target": 0.02,
-  "money_supply_growth": 0.05,
-  "tax_rate": 0.22,
-  "government_spending": 0.20,
-  "supply_chain_friction": 0.10,
-  "sentiment": 0.55,
-  "months": 60,
-  "seed": 42,
-  "shock_volatility": 1.0
-}
-```
-
-**Response:** `history` (monthly time series), `shocks` (event log), `insights` (Edu-Engine cards), `summary` (KPIs).
-
-### `POST /api/household`
-Overlay a personal balance sheet on a simulation.
-
-**Request body:**
-```json
-{
-  "profile": {
-    "gross_salary": 75000,
-    "mortgage_debt": 250000,
-    "mortgage_rate": 0.065,
-    "other_debt": 15000,
-    "other_debt_rate": 0.18,
-    "savings": 20000,
-    "monthly_spend": 3500
-  },
-  "history": [...]
-}
-```
-
-### `POST /api/game/score`
-Score a Central Banker game run.
-
-### `POST /api/insights/explain`
-Get a plain-English explanation when a lever changes.
+### D. "Central Banker" Game Mode
+- Gamified 5-year challenge.
+- Real-time score based on proximity to targets: Inflation ≈ `2%`, Unemployment ≈ `4%`, GDP Growth ≈ `2.5%`.
+- Dynamic hints guide the player through monetary policy trade-offs.
 
 ---
 
-## 🎨 Design System
+## Design & Visual System
 
-- **Palette**: Slate-and-navy dark mode (`#0a0e1a` → `#1c2640`)
-- **Semantic colors**:
-  - Emerald `#34d399` — gains / positive / on-target
-  - Crimson `#f87171` — recessions / losses / danger
-  - Amber `#fbbf24` — warnings / elevated risk
-  - Blue `#60a5fa` — policy / information
-- **Typography**: Inter (UI) + JetBrains Mono (numerical data)
-- **Charts**: Chart.js 4.4 with custom gradient fills and synchronized dark theme
-- **Responsive**: 3-column dashboard collapses to single column on tablet/mobile
+- **Aesthetic**: Institutional dark-mode (`#060a14` deep navy) with slate surfaces (`#0f1320`) and high-contrast typography.
+- **Color Coding**: Emerald (`#10b981`) for growth/gains, Crimson (`#ef4444`) for contraction/recessions, Amber (`#f59e0b`) for warnings and live feeds.
+- **Layout**: Responsive 3-column grid (Controls | Main Charts | Insights & Calculator) collapsing to single column on mobile.
+- **Typography**: Inter (body), Space Grotesk (display/headings), JetBrains Mono (data/numbers).
+- **Charts**: Chart.js with custom dark-mode palettes, smooth tension curves, right-axis dual-scale support (GDP vs. Unemployment).
+- **Ticker**: Scrolling live economic news feed simulating micro-shocks and market reactions.
 
 ---
 
-## 🧪 Stochastic Engine
+## Technical Details
 
-Every simulation month generates a shock:
-- 88% of months: Gaussian N(0, 0.75σ)
-- 12% of months: tail event N(0, 1.4σ), capped at ±2.8σ
-- Shock category randomly selected from 10 types
-- Each shock has a headline drawn from a curated vocabulary (~150 events)
-- Shocks feed demand, inflation, and risk premium with realistic lags
-
-The `shock_volatility` parameter (0–3×) scales all shock magnitudes — use it to simulate calm expansions vs. crisis regimes.
-
----
-
-## 📚 Educational Theory References
-
-- **IS-LM / AD-AS** — aggregate demand & output gaps
-- **Phillips Curve** — inflation-unemployment tradeoff
-- **Okun's Law** — growth-unemployment link
-- **Taylor Rule** — policy rate reaction function (intuition)
-- **Quantity Theory of Money** (MV = PY) — money growth → inflation
-- **Dividend Discount Model** — equity valuation
-- **Expectations-Augmented Phillips Curve** — adaptive expectations
-- **Ricardian / Fiscal Multipliers** — government spending channel
+- **Frontend**: Vanilla JavaScript (ES6 modules via single-file architecture), HTML5 semantic tags, responsive CSS Grid / Flexbox.
+- **Backend**: Python 3.11, Flask, NumPy (stochastic generation), CORS enabled.
+- **Charts**: Chart.js 4.4.1 (bundled locally in `frontend/lib/` for offline/preview compatibility).
+- **API Endpoints**:
+  - `GET /` — Service status
+  - `GET /api/scenarios` — List historical presets
+  - `GET /api/scenario/<key>` — Load preset params
+  - `POST /api/simulate` — Run stochastic simulation (returns timeline + summary)
+  - `POST /api/edu_insight` — Generate plain-English explanations
+  - `POST /api/household_impact` — Calculate household-level impact
 
 ---
 
-## 🛠️ Tech Stack
-
-| Layer | Technology |
-|-------|-----------|
-| Economic Engine | Python 3.11 (pure math, no ML frameworks) |
-| API | Flask 3.0 + flask-cors |
-| Production WSGI | Gunicorn |
-| Frontend | HTML5, CSS3, Vanilla JavaScript (ES6+) |
-| Charts | Chart.js 4.4 |
-| Fonts | Inter + JetBrains Mono (Google Fonts) |
-| Dependencies Zero build step — no npm, no webpack, no framework lock-in.
+## Mock Mode (No Backend)
+If deploying purely as a static site (e.g., GitHub Pages without serverless functions), replace the `fetch()` logic in `frontend/js/app.js` with a mock generator that produces synthetic data locally. The UI remains fully functional.
 
 ---
 
-## 📄 License
+## Educational Value
 
-MIT License — built for Hackonomics 2027.
+This simulator is intended for:
+- **Economics Students**: Visualizing how interest rates, fiscal policy, and external shocks interact.
+- **Policy Enthusiasts**: Experimenting with "what-if" scenarios to understand policy trade-offs.
+- **Analysts**: Demonstrating stochastic modeling techniques and macro forecasting approximations.
 
 ---
 
-## 🙏 Acknowledgments
+## Credits
 
-Economic models inspired by standard macroeconomic textbooks (Mankiw, Blanchard, Mishkin) and central bank working papers. All simulations are stylized and for educational purposes — not investment advice.
+Built as a capstone entry for **Econ Sim**. The mathematical models are educational approximations and do not constitute financial advice or real market forecasting.

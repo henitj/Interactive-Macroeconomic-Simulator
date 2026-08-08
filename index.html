@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Econ Sim — Interactive Macroeconomic Simulator. Adjust economic levers and watch realistic market dynamics in real time." />
+  <title>Econ Sim — Interactive Macroeconomic Simulator</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,700;1,9..40,400&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="frontend/css/style.css" />
+</head>
+<body>
+  <div class="ambient-grid"></div>
+
+  <div id="infoModal" class="tutorial-modal" style="display:none;" role="dialog" aria-modal="true" aria-label="Definitions & Details">
+    <div class="tutorial-inner" style="max-width:640px;width:92%;">
+      <button onclick="closeInfoModal()" class="tutorial-close" aria-label="Close info">×</button>
+      <h2>Economics in Plain English</h2>
+      <div style="font-size:0.9rem;line-height:1.7;color:#c0c6d8;text-align:left;max-height:70vh;overflow-y:auto;padding-right:0.5rem;">
+        <h3 style="color:#fff;margin-top:1rem;font-size:1rem;">GDP (Gross Domestic Product)</h3>
+        <p>The total value of everything a country produces in a year. Think of it as the size of the national paycheck. When GDP grows, businesses usually hire more people. When it shrinks, people lose jobs.</p>
+
+        <h3 style="color:#fff;margin-top:1rem;font-size:1rem;">Unemployment</h3>
+        <p>The share of people looking for work who cannot find it. Low unemployment is good for families. High unemployment means less spending, which makes the whole economy weaker.</p>
+
+        <h3 style="color:#fff;margin-top:1rem;font-size:1rem;">Inflation (CPI)</h3>
+        <p>The rate at which prices increase over time. A small amount (around 2%) is healthy — it encourages people to spend rather than hoard cash. Too much inflation means your salary buys less food, gas, and rent.</p>
+
+        <h3 style="color:#fff;margin-top:1rem;font-size:1rem;">Federal Funds Rate</h3>
+        <p>The interest rate set by the central bank. It affects every loan in the country — credit cards, car loans, mortgages. When the rate rises, borrowing costs rise, which usually cools inflation but can slow hiring.</p>
+
+        <h3 style="color:#fff;margin-top:1rem;font-size:1rem;">Money Supply Growth</h3>
+        <p>How fast the total amount of money in the economy is growing. More money in circulation can boost growth, but too much too quickly can cause prices to jump.</p>
+
+        <h3 style="color:#fff;margin-top:1rem;font-size:1rem;">Tax Rate</h3>
+        <p>The percentage of income the government collects. Higher taxes mean more funding for public services but less take-home pay for workers. Lower taxes leave more money in pockets but reduce government budgets.</p>
+
+        <h3 style="color:#fff;margin-top:1rem;font-size:1rem;">Supply Friction</h3>
+        <p>A simple way to say "how hard it is to make and deliver things." When supply chains break, factories slow down, and prices rise — even if people still want to buy.</p>
+
+        <h3 style="color:#fff;margin-top:1rem;font-size:1rem;">Market Sentiment</h3>
+        <p>How optimistic or scared people feel about the future. When people feel confident, they invest, spend, and take risks. When fear spreads, people save money and avoid buying big items.</p>
+      </div>
+      <button onclick="closeInfoModal()" class="btn-primary" style="margin-top:1rem;">Got it — Close</button>
+    </div>
+  </div>
+
+  <div id="tutorialModal" class="tutorial-modal" role="dialog" aria-modal="true" aria-label="Quick Start Guide">
+    <div class="tutorial-inner">
+      <button onclick="closeTutorial()" class="tutorial-close" aria-label="Close tutorial">×</button>
+      <h2>Econ Sim — Quick Start</h2>
+      <div class="tutorial-steps">
+        <article class="tutorial-card"><span class="step-num">01</span><h3>Adjust the Levers</h3><p>Move sliders to change rates, inflation, supply friction, and sentiment.</p></article>
+        <article class="tutorial-card"><span class="step-num">02</span><h3>Watch Realistic Curves</h3><p>Charts use historical economic patterns. Watch them react live.</p></article>
+        <article class="tutorial-card"><span class="step-num">03</span><h3>Play Central Banker</h3><p>Start the challenge, adjust policy live, and stabilize the economy.</p></article>
+        <article class="tutorial-card"><span class="step-num">04</span><h3>Learn the Words</h3><p><strong>GDP</strong> = total stuff made. <strong>Inflation</strong> = prices rising. <strong>Fed Rate</strong> = cost of borrowing. <strong>Unemployment</strong> = people without work. Simple.</p></article>
+      </div>
+      <button onclick="closeTutorial()" class="btn-primary">Got it — Let me explore</button>
+    </div>
+  </div>
+
+  <script>
+    let tutorialClosed = false;
+    function closeTutorial() { tutorialClosed = true; document.getElementById('tutorialModal').style.display = 'none'; }
+  </script>
+
+  <header class="app-header">
+    <div class="header-brand">
+      <div class="logo-badge">ES</div>
+      <div>
+        <h1>Econ <span class="accent">Sim</span></h1>
+        <p>Interactive Macroeconomic Intelligence</p>
+      </div>
+    </div>
+    <div class="header-status">
+      <span class="live-dot"></span>
+      <span>Live — Q<span id="currentQuarter">1</span></span>
+      <span class="divider">|</span>
+      <span id="systemStatus">READY</span>
+    </div>
+  </header>
+
+  <main class="layout-two-col">
+    <aside class="col-left">
+      <section class="panel glass">
+        <h2>Macro Controls</h2>
+        <p class="subtitle">Adjust inputs. Charts react continuously.</p>
+
+        <div class="slider-group">
+          <label for="fedRate">Federal Funds Rate <span class="val" id="vFed">4.5%</span></label>
+          <input type="range" id="fedRate" min="0" max="18" step="0.25" value="4.5" />
+        </div>
+        <div class="slider-group">
+          <label for="inflationRate">CPI Inflation <span class="val" id="vInf">2.5%</span></label>
+          <input type="range" id="inflationRate" min="-3" max="12" step="0.1" value="2.5" />
+        </div>
+        <div class="slider-group">
+          <label for="moneyGrowth">Money Supply Growth <span class="val" id="vMoney">3.0%</span></label>
+          <input type="range" id="moneyGrowth" min="-2" max="25" step="0.5" value="3.0" />
+        </div>
+        <div class="slider-group">
+          <label for="taxRate">Tax Rate <span class="val" id="vTax">21.0%</span></label>
+          <input type="range" id="taxRate" min="10" max="50" step="0.5" value="21.0" />
+        </div>
+        <div class="slider-group">
+          <label for="supplyFriction">Supply Friction <span class="val" id="vSupply">10</span></label>
+          <input type="range" id="supplyFriction" min="0" max="100" step="1" value="10" />
+        </div>
+        <div class="slider-group">
+          <label for="sentiment">Market Sentiment <span class="val" id="vSent">50</span></label>
+          <input type="range" id="sentiment" min="0" max="100" step="1" value="50" />
+        </div>
+
+        <div class="live-stats compact" aria-label="Live Quarter Readout">
+          <div><span>GDP</span><strong id="liveGDP">—</strong></div>
+          <div><span>Unemp</span><strong id="liveUnemp">—</strong></div>
+          <div><span>Infl</span><strong id="liveInf">—</strong></div>
+          <div><span>Sent</span><strong id="liveSent">—</strong></div>
+        </div>
+
+        <div class="action-row">
+          <button id="btnRun" onclick="startLoop()" class="btn-primary">Run Simulation</button>
+          <button onclick="stopLoop()" class="btn-secondary">Stop</button>
+          <button onclick="resetDefaults()" class="btn-secondary">Reset</button>
+        </div>
+      </section>
+
+      <section class="panel glass">
+        <h2>Historical Scenarios</h2>
+        <div class="scenario-grid">
+          <button class="scenario-card" onclick="loadScenario('1970s_stagflation')">
+            <h3>1970s Stagflation</h3>
+            <p>Oil embargoes, wage-price spirals, persistent inflation.</p>
+          </button>
+          <button class="scenario-card" onclick="loadScenario('2008_financial_crisis')">
+            <h3>2008 Financial Crisis</h3>
+            <p>Credit freeze, zero-rate policy, deep unemployment.</p>
+          </button>
+          <button class="scenario-card" onclick="loadScenario('2020_supply_shock')">
+            <h3>2020 Supply Shock</h3>
+            <p>Pandemic lockdowns, massive stimulus, supply breaks.</p>
+          </button>
+        </div>
+      </section>
+
+      <section class="panel glass">
+        <h2>What The Numbers Mean</h2>
+        <button onclick="openInfoModal()" class="btn-secondary" style="margin-top:0.25rem;">Learn More — Definitions & Details</button>
+      </section>
+
+      <section class="panel glass">
+        <h2>Household Impact <span style="font-size:0.7rem;color:#8896b3;font-weight:400;">(For Beginners)</span></h2>
+        <p class="subtitle">Enter your numbers. See how the economy changes what you keep.</p>
+
+        <div class="simple-box" style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:0.75rem;margin-bottom:1rem;">
+          <p style="font-size:0.82rem;color:#c0c6d8;line-height:1.45;margin:0;">
+            <strong style="color:#fff;">Quick tip:</strong> Your <strong>salary</strong> is pay before taxes. <strong>Debt</strong> is everything you owe. Higher rates = bigger monthly bills. Higher prices = less buying power.
+          </p>
+        </div>
+
+        <form id="householdForm" onsubmit="event.preventDefault(); calculateHousehold();" style="margin-bottom:0.5rem;">
+          <div class="field-row"><label for="salaryInput">Your Annual Salary ($)</label><input type="number" id="salaryInput" value="75000" step="1000" min="0" /></div>
+          <div class="field-row"><label for="debtInput">Your Total Debt ($)</label><input type="number" id="debtInput" value="250000" step="5000" min="0" /></div>
+          <button type="submit" class="btn-primary">Show Me My Numbers</button>
+        </form>
+
+        <div id="householdResult" class="household-output">
+          <div class="metric"><span>Adjusted Salary (after inflation)</span><strong id="hhSalary">$75,000</strong></div>
+          <div class="metric"><span>Purchasing Power</span><strong id="hhPower">100%</strong></div>
+          <div class="metric"><span>Monthly Debt Payment</span><strong id="hhDebt">$1,250</strong></div>
+          <div class="metric"><span>Debt-to-Income Ratio</span><strong id="hhRatio">33%</strong></div>
+        </div>
+
+        <div id="hhExplanation" style="margin-top:0.5rem;font-size:0.8rem;color:#aab2c4;background:rgba(0,229,143,0.05);border:1px solid rgba(0,229,143,0.2);border-radius:10px;padding:0.6rem;line-height:1.45;">
+          <strong style="color:#00e58f;">In plain English:</strong> Your salary buys less when prices rise. Higher debt means larger monthly bills. If the ratio above hits 40% or more, most experts say you are stretched thin.
+        </div>
+      </section>
+    </aside>
+
+    <section class="col-right">
+      <div class="chart-grid-2x2">
+        <article class="chart-card glass">
+          <div class="chart-header"><h3>GDP &amp; Unemployment</h3><span class="trend-badge" id="trendGDP">STABLE</span></div>
+          <div class="chart-canvas-wrapper"><canvas id="chartGDP"></canvas></div>
+          <p class="tooltip">GDP growth reflects aggregate output. Unemployment follows Okun's Law.</p>
+        </article>
+        <article class="chart-card glass">
+          <div class="chart-header"><h3>Asset Performance</h3><span class="trend-badge" id="trendAsset">STABLE</span></div>
+          <div class="chart-canvas-wrapper"><canvas id="chartAssets"></canvas></div>
+          <p class="tooltip">Stock, real estate, and commodity prices react to monetary conditions and sentiment.</p>
+        </article>
+        <article class="chart-card glass">
+          <div class="chart-header"><h3>Real vs Nominal Wages</h3><span class="trend-badge" id="trendWage">STABLE</span></div>
+          <div class="chart-canvas-wrapper"><canvas id="chartWage"></canvas></div>
+          <p class="tooltip">Real wages = Nominal Wages / CPI. Purchasing power depends on real wages vs. costs.</p>
+        </article>
+        <article class="chart-card glass">
+          <div class="chart-header"><h3>Consumer Purchasing Power</h3><span class="trend-badge" id="trendPower">STABLE</span></div>
+          <div class="chart-canvas-wrapper"><canvas id="chartPower"></canvas></div>
+          <p class="tooltip">Consumer Power = Real Wage Index / Cost Index (CPI + Commodity mix).</p>
+        </article>
+      </div>
+
+      <section class="ticker" aria-label="Live Economic News Feed">
+        <div class="ticker-label">LIVE FEED</div>
+        <div class="ticker-track" id="tickerTrack">
+          <span>Markets open. Fed rate stable at 4.5%.</span>
+          <span>Consumer confidence holds near 52.</span>
+          <span>Markets open. Fed rate stable at 4.5%.</span>
+          <span>Consumer confidence holds near 52.</span>
+        </div>
+      </section>
+
+      <section class="edu-engine glass" aria-label="Educational Insights">
+        <h2>Edu-Engine <span class="badge">AI</span></h2>
+        <div id="eduContent"><p>Adjust any economic lever. The Edu-Engine explains macro dynamics in plain English.</p></div>
+      </section>
+
+      <section class="panel glass">
+        <h2>Central Banker Mode <span class="badge-game">GAME</span></h2>
+        <p class="subtitle">Keep inflation near 2% and unemployment low over 5 years.</p>
+        <div class="game-controls" id="gameControls">
+          <div class="mini-slider"><label>Fed Rate <span id="gFed" class="mini-val">4.5%</span></label><input type="range" id="gFedSlider" min="0" max="15" step="0.5" value="4.5" oninput="updateGameFromControls()" /></div>
+          <div class="mini-slider"><label>Inflation <span id="gInf" class="mini-val">2.5%</span></label><input type="range" id="gInfSlider" min="-2" max="12" step="0.1" value="2.5" oninput="updateGameFromControls()" /></div>
+          <div class="mini-slider"><label>Tax Rate <span id="gTax" class="mini-val">21.0%</span></label><input type="range" id="gTaxSlider" min="10" max="50" step="0.5" value="21.0" oninput="updateGameFromControls()" /></div>
+          <div class="mini-slider"><label>Sentiment <span id="gSent" class="mini-val">50</span></label><input type="range" id="gSentSlider" min="0" max="100" step="1" value="50" oninput="updateGameFromControls()" /></div>
+        </div>
+        <div class="action-row compact">
+          <button onclick="startGameMode()" class="btn-primary">Start Challenge</button>
+          <button onclick="stopLoop()" class="btn-secondary">Stop Loop</button>
+        </div>
+        <div id="gameUI" class="game-panel hidden">
+          <div class="game-stats">
+            <div><span>Inflation</span><strong id="gameInf">2.5%</strong></div>
+            <div><span>Unemployment</span><strong id="gameUnemp">4.2%</strong></div>
+            <div><span>Score</span><strong id="gameScore">0</strong></div>
+          </div>
+          <div class="game-bar"><div class="game-fill" id="gameProgress"></div></div>
+          <p class="game-hint" id="gameHint">Adjust policy levers above to stabilize the economy.</p>
+        </div>
+      </section>
+    </section>
+  </main>
+
+  <footer class="app-footer"><p>Econ Sim — Interactive Macroeconomic Simulator. Educational tool only.</p></footer>
+  <script src="frontend/lib/chart.min.js"></script>
+  <script src="frontend/js/app.js"></script>
+</body>
+</html>
